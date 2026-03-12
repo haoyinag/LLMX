@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-[#f6f7fb] text-slate-900;
+}
+
+.markdown {
+  line-height: 1.65;
+  font-size: 0.98rem;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown p {
+  margin: 0.5rem 0;
+}
+
+.markdown pre {
+  margin: 0.75rem 0;
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  overflow-x: auto;
+}
+
+.markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+  font-size: 0.9em;
+}
+
+.markdown pre code {
+  background: transparent;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.markdown a {
+  color: #2563eb;
+  text-decoration: underline;
+}

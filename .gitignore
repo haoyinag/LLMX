@@ -1,0 +1,22 @@
+node_modules
+.next
+out 
+
+# Ignore all log files and logs directory
+logs
+*.log
+logs/*
+
+# Ignore all .env files except .env.local
+.env
+.env.*.local
+!.env.local
+
+# Ignore all .DS_Store files
+.DS_Store
+
+# Ignore all data files
+.data
+
+# extera
+.history
