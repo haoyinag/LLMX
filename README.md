@@ -1,6 +1,25 @@
 # LLMX
 
-Next.js 15 + Ant Design X 全栈 AI 聊天模板，内置 DeepSeek SSE 转发、流式 Markdown 渲染、Abort 停止生成，以及 Zustand 模型状态管理。
+开箱即用的 Next.js 15 + Ant Design X 全栈 AI 对话模板，内置 DeepSeek SSE 透传、流式 Markdown 渲染、Abort 停止生成、会话存储与基础安全控制。可作为前端或全栈项目的模板起点。
+
+![LLMX Demo](./assets/demo.pic.jpg)
+
+## 快速开始
+
+```bash
+pnpm install
+pnpm dev
+```
+
+打开 `http://localhost:3000`。
+
+## 目录
+
+- `src/app/api/chat/route.ts` DeepSeek SSE 透传（Edge Runtime）
+- `src/app/api/history/route.ts` 会话存储（Node Runtime）
+- `src/components/ChatClient.tsx` 前端聊天 UI
+- `src/store/model.ts` Zustand 模型状态
+- `src/lib/markdown.ts` Markdown 渲染
 
 ## 特性
 
@@ -14,15 +33,6 @@ Next.js 15 + Ant Design X 全栈 AI 聊天模板，内置 DeepSeek SSE 转发、
 - Zustand 管理模型 ID
 - 会话存储（localStorage / 文件型数据库）
 - 成本与安全控制（限流 / 最大 tokens / 并发限制）
-
-## 开发
-
-```bash
-pnpm install
-pnpm dev
-```
-
-打开 `http://localhost:3000`。
 
 ## 环境变量
 
@@ -59,7 +69,7 @@ MAX_COMPLETION_TOKENS=1024
 - `NEXT_PUBLIC_SESSION_STORAGE=local` 使用 localStorage 存储会话。
 - `NEXT_PUBLIC_SESSION_STORAGE=db` 使用文件型会话存储（Node Runtime），对应接口 `src/app/api/history/route.ts`。
 - `SESSION_DB_PATH` 指定文件存储目录，默认 `.data`。
- - 文件型存储适合本地开发，生产环境建议替换为真正数据库。
+- 文件型存储适合本地开发，生产环境建议替换为真正数据库。
 
 ## 成本与安全控制
 
@@ -67,14 +77,6 @@ MAX_COMPLETION_TOKENS=1024
 - `CONCURRENCY_MAX` 并发限制（按 IP）。
 - `MAX_INPUT_CHARS` 输入字符数限制。
 - `MAX_COMPLETION_TOKENS` 输出 token 上限。
-
-## 目录
-
-- `src/app/api/chat/route.ts` DeepSeek SSE 透传
-- `src/components/ChatClient.tsx` 前端聊天 UI
-- `src/store/model.ts` Zustand 模型状态
-- `src/lib/markdown.ts` Markdown 渲染
-- `src/app/api/history/route.ts` 会话存储（Node Runtime）
 
 ## 构建
 
@@ -89,3 +91,16 @@ pnpm start
 2. 设置环境变量：`DEEPSEEK_API_KEY`、`APP_API_KEY`、`AUTH_BYPASS=false`，以及可选的限流与会话存储配置。
 3. 部署后 `/api/chat` 为 Edge Runtime；`/api/history` 为 Node Runtime。
 4. 前端通过 `NEXT_PUBLIC_APP_API_KEY` 携带鉴权头访问服务端。
+
+## 文档
+
+- `docs/overview.md` 架构与数据流
+- `docs/config.md` 配置说明
+- `docs/deployment.md` 部署指南
+- `docs/security.md` 安全与成本控制
+- `docs/faq.md` 常见问题
+- `docs/extension.md` 扩展指南
+
+## License
+
+MIT

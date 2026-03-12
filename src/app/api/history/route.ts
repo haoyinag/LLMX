@@ -95,7 +95,8 @@ export async function POST(request: Request) {
     messages?: StoredMessage[];
   };
 
-  if (!body?.sessionId || !Array.isArray(body?.messages)) {
+  const sessionId = body?.sessionId?.trim();
+  if (!sessionId || !Array.isArray(body?.messages)) {
     return new Response(JSON.stringify({ error: "Invalid payload" }), {
       status: 400,
       headers: { "Content-Type": "application/json" }
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
 
   await (writeLock = writeLock.then(async () => {
     const store = await readStore();
-    store[body.sessionId] = trimmed;
+    store[sessionId] = trimmed;
     await writeStore(store);
   }));
 
