@@ -32,6 +32,7 @@ pnpm dev
 - AbortController 停止生成
 - Zustand 管理模型 ID
 - 会话存储（localStorage / 文件型数据库）
+- 多会话列表与切换
 - 成本与安全控制（限流 / 最大 tokens / 并发限制）
 
 ## 环境变量

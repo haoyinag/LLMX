@@ -17,7 +17,6 @@ type StoreShape = {
 
 const DATA_DIR = process.env.SESSION_DB_PATH || ".data";
 const STORE_FILE = path.join(process.cwd(), DATA_DIR, "sessions.json");
-const MAX_STORED_MESSAGES = Number(process.env.MAX_STORED_MESSAGES || 200);
 
 let writeLock: Promise<void> = Promise.resolve();
 
@@ -71,19 +70,12 @@ export async function GET(request: Request) {
     });
   }
 
-  const { searchParams } = new URL(request.url);
-  const sessionId = searchParams.get("sessionId");
-  if (!sessionId) {
-    return new Response(JSON.stringify({ error: "Missing sessionId" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" }
-    });
-  }
-
   const store = await readStore();
-  const messages = store.messages[sessionId] || [];
+  const sessions = Object.entries(store.sessions)
+    .map(([id, meta]) => ({ id, title: meta.title, updatedAt: meta.updatedAt }))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 
-  return new Response(JSON.stringify({ messages }), {
+  return new Response(JSON.stringify({ sessions }), {
     status: 200,
     headers: { "Content-Type": "application/json" }
   });
@@ -97,34 +89,18 @@ export async function POST(request: Request) {
     });
   }
 
-  const body = (await request.json()) as {
-    sessionId?: string;
-    messages?: StoredMessage[];
-    title?: string;
-  };
-
-  const sessionId = body?.sessionId?.trim();
-  if (!sessionId || !Array.isArray(body?.messages)) {
-    return new Response(JSON.stringify({ error: "Invalid payload" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" }
-    });
-  }
-
-  const trimmed = body.messages.slice(-MAX_STORED_MESSAGES);
+  const body = (await request.json()) as { sessionId?: string; title?: string };
+  const sessionId = body?.sessionId?.trim() || `session_${Date.now()}`;
+  const title = body?.title?.trim() || "新对话";
 
   await (writeLock = writeLock.then(async () => {
     const store = await readStore();
-    store.messages[sessionId] = trimmed;
-    const title = body.title?.trim();
-    store.sessions[sessionId] = {
-      title: title && title.length > 0 ? title.slice(0, 32) : "新对话",
-      updatedAt: Date.now()
-    };
+    store.sessions[sessionId] = { title: title.slice(0, 32), updatedAt: Date.now() };
+    if (!store.messages[sessionId]) store.messages[sessionId] = [];
     await writeStore(store);
   }));
 
-  return new Response(JSON.stringify({ ok: true }), {
+  return new Response(JSON.stringify({ sessionId }), {
     status: 200,
     headers: { "Content-Type": "application/json" }
   });

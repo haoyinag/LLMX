@@ -7,6 +7,7 @@ LLMX is a Next.js 15 App Router full-stack template for AI chat. The frontend us
 - `src/app` App Router pages and API routes
 - `/api/chat` Edge Runtime streaming proxy to DeepSeek
 - `/api/history` Node Runtime file-based session store
+- `/api/sessions` session list and metadata
 - Frontend chat state managed by `useXChat` and streamed via SSE
 
 ## Request Flow
