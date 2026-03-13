@@ -1,5 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,7 @@ type StoredMessage = {
 };
 
 type StoreShape = {
-  sessions: Record<string, { title: string; updatedAt: number }>;
+  sessions: Record<string, { title: string; createdAt: number; updatedAt?: number; order?: number }>;
   messages: Record<string, StoredMessage[]>;
 };
 
@@ -72,8 +73,20 @@ export async function GET(request: Request) {
 
   const store = await readStore();
   const sessions = Object.entries(store.sessions)
-    .map(([id, meta]) => ({ id, title: meta.title, updatedAt: meta.updatedAt }))
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+    .map(([id, meta]) => ({
+      id,
+      title: meta.title,
+      createdAt: meta.createdAt,
+      updatedAt: meta.updatedAt,
+      order: meta.order,
+      hasMessages: (store.messages[id]?.length ?? 0) > 0
+    }))
+    .sort((a, b) => {
+      const orderA = a.order ?? 0;
+      const orderB = b.order ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt);
+    });
 
   return new Response(JSON.stringify({ sessions }), {
     status: 200,
@@ -90,17 +103,105 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as { sessionId?: string; title?: string };
-  const sessionId = body?.sessionId?.trim() || `session_${Date.now()}`;
+  const sessionId = body?.sessionId?.trim() || randomUUID();
   const title = body?.title?.trim() || "新对话";
+  const now = Date.now();
 
   await (writeLock = writeLock.then(async () => {
     const store = await readStore();
-    store.sessions[sessionId] = { title: title.slice(0, 32), updatedAt: Date.now() };
+    const existing = store.sessions[sessionId];
+    store.sessions[sessionId] = {
+      title: title.slice(0, 32),
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: existing?.updatedAt,
+      order: existing?.order
+    };
     if (!store.messages[sessionId]) store.messages[sessionId] = [];
     await writeStore(store);
   }));
 
   return new Response(JSON.stringify({ sessionId }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
+export async function DELETE(request: Request) {
+  if (!isAuthorized(request)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const sessionId = searchParams.get("sessionId")?.trim();
+  if (!sessionId) {
+    return new Response(JSON.stringify({ error: "Missing sessionId" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  await (writeLock = writeLock.then(async () => {
+    const store = await readStore();
+    delete store.sessions[sessionId];
+    delete store.messages[sessionId];
+    await writeStore(store);
+  }));
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
+export async function PATCH(request: Request) {
+  if (!isAuthorized(request)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  const body = (await request.json()) as { order?: string[]; sessionId?: string; title?: string };
+  const order = Array.isArray(body?.order) ? body.order : [];
+  const sessionId = body?.sessionId?.trim();
+  const title = body?.title?.trim();
+
+  if (order.length === 0 && !sessionId) {
+    return new Response(JSON.stringify({ error: "Invalid payload" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+
+  await (writeLock = writeLock.then(async () => {
+    const store = await readStore();
+    if (order.length > 0) {
+      order.forEach((id, index) => {
+        const existing = store.sessions[id];
+        if (existing) {
+          store.sessions[id] = {
+            ...existing,
+            order: index + 1
+          };
+        }
+      });
+    }
+    if (sessionId && title) {
+      const existing = store.sessions[sessionId];
+      if (existing) {
+        store.sessions[sessionId] = {
+          ...existing,
+          title: title.slice(0, 32)
+        };
+      }
+    }
+    await writeStore(store);
+  }));
+
+  return new Response(JSON.stringify({ ok: true }), {
     status: 200,
     headers: { "Content-Type": "application/json" }
   });

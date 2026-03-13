@@ -11,7 +11,7 @@ type StoredMessage = {
 };
 
 type StoreShape = {
-  sessions: Record<string, { title: string; updatedAt: number }>;
+  sessions: Record<string, { title: string; createdAt: number; updatedAt?: number; order?: number }>;
   messages: Record<string, StoredMessage[]>;
 };
 
@@ -117,9 +117,13 @@ export async function POST(request: Request) {
     const store = await readStore();
     store.messages[sessionId] = trimmed;
     const title = body.title?.trim();
+    const now = Date.now();
+    const existing = store.sessions[sessionId];
     store.sessions[sessionId] = {
       title: title && title.length > 0 ? title.slice(0, 32) : "新对话",
-      updatedAt: Date.now()
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+      order: existing?.order
     };
     await writeStore(store);
   }));
